@@ -12,12 +12,14 @@ class PhotoCollectionViewCell: UICollectionViewCell {
     @IBOutlet var imageView: UIImageView!
     @IBOutlet var spinner: UIActivityIndicatorView!
     
-    let defaultImage = UIImage(named: "placeHolder")
+//let defaultImage = UIImage(named: "placeHolder")
     
     func update(with image: UIImage?) {
         if let imageToDisplay = image {
+            
             spinner.stopAnimating()
             imageView.image = imageToDisplay
+            
         } else {
             spinner.startAnimating()
             imageView.image = nil
@@ -26,13 +28,13 @@ class PhotoCollectionViewCell: UICollectionViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        imageView.image = defaultImage
         update(with: nil)
+        
     }
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        imageView.image = defaultImage
         update(with: nil)
+        
     }
 }
