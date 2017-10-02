@@ -35,8 +35,6 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         
         mapView.delegate = self
         
-        
-        // Get the stack
         let delegate = UIApplication.shared.delegate as! AppDelegate
         let stack = delegate.stack
         managedContext = stack.context
@@ -45,7 +43,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         longPressRecognizer.numberOfTouchesRequired = 1
         mapView.addGestureRecognizer(longPressRecognizer)
         
-
+        
         if restoringRegion == false {
             mapView.setRegion(mapView.regionThatFits(mapView.region), animated: true)
         }
@@ -54,7 +52,6 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         
         
         fetchAllPins { (result) in
-            // display the pins on the map
             if result == nil {
                 print("no pins to display")
             } else {
@@ -67,7 +64,6 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
                 }
             }
         }
-        
         
         
         
@@ -108,15 +104,11 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
             
         } else if gestureRecognizer.state == UIGestureRecognizerState.ended {
             dragPin = nil
-            // now create the pin
             let pin = Pin(context: managedContext)
             pin.latitude = newCoordinates.latitude
             pin.longitude = newCoordinates.longitude
             
             saveContext()
-
-            
-            //FlickrClient.sharedInstance().fetchPhotos(pin: pin, inContext: self.managedContext)
             
             
         }
@@ -128,12 +120,9 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     func fetchAllPins(completion: @escaping ([Pin]?) -> Void) {
         
         do {
-            // execute the fetch request
             let pinFetch: NSFetchRequest<Pin> = Pin.fetchRequest()
             let pins = try managedContext.fetch(pinFetch)
-            // validate that there are pins in Core Data
             if pins.isEmpty {
-                // no pins in Core Data, display onboarding experience
                 completion(nil)
                 return
             }
@@ -173,10 +162,15 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         guard view.annotation != nil else { return }
         
         let coordinate = view.annotation?.coordinate
-        
         let precision = 0.0001
+        let firstPredicate = NSPredicate(format: "(\(#keyPath(Pin.latitude)) BETWEEN {\((coordinate?.latitude)! - precision), \((coordinate?.latitude)! + precision) })")
+        let secondPredicate = NSPredicate(format: "(\(#keyPath(Pin.longitude)) BETWEEN {\((coordinate?.longitude)! - precision), \((coordinate?.longitude)! + precision) })")
+        let predicate = NSCompoundPredicate(type: .and , subpredicates: [firstPredicate, secondPredicate])
+        
+        
         let pinFetch: NSFetchRequest<Pin> = Pin.fetchRequest()
-        pinFetch.predicate = NSPredicate(format: "(%K BETWEEN {\((coordinate?.latitude)! - precision), \((coordinate?.latitude)! + precision) }) AND (%K BETWEEN {\((coordinate?.longitude)! - precision), \((coordinate?.longitude)! + precision) })", #keyPath(Pin.latitude), #keyPath(Pin.longitude))
+        pinFetch.predicate = predicate
+        
         
         do {
             let pins = try managedContext.fetch(pinFetch)
@@ -196,7 +190,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
                     
                 }
             } else {
-                print("Could not find a matching pin for this latitude: \(coordinate?.latitude) and longitude: \(coordinate?.longitude)")
+                print("Could not find a matching pin for this latitude: \(coordinate!.latitude) and longitude: \(coordinate!.longitude)")
             }
             
         } catch let error as NSError {
@@ -207,8 +201,6 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     }
     
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        // if we're in the process or restoring the map region, do not save
-        // otherwise save the region since it changed
         if restoringRegion == false {
             saveMapRegion()
         }
@@ -250,7 +242,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         defaults.set(mapView.region.span.longitudeDelta, forKey: "longitudeDelta")
     }
     
-   
+    
     
     func restoreMapRegion(animated: Bool) {
         
@@ -282,7 +274,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         }
     }
     
-        
+    
     
     
     

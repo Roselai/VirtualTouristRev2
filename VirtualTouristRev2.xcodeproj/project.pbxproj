@@ -28,7 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		6A0A50431F7D7F2C0064427B /* PhotoAlbumViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PhotoAlbumViewController.swift; path = VirtualTouristRev2/PhotoAlbumViewController.swift; sourceTree = "<group>"; };
+		6A0A50431F7D7F2C0064427B /* PhotoAlbumViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoAlbumViewController.swift; sourceTree = "<group>"; };
 		6A0A50471F8018030064427B /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		6A0A50491F80180E0064427B /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		6ABE8D221F7C21F800975C18 /* VirtualTouristRev2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VirtualTouristRev2.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -47,7 +47,7 @@
 		6ABE8D451F7C253900975C18 /* FlickrClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FlickrClient.swift; sourceTree = "<group>"; };
 		6ABE8D461F7C253900975C18 /* FlickrConvenience.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FlickrConvenience.swift; sourceTree = "<group>"; };
 		6ABE8D4E1F7C26FE00975C18 /* PhotoCollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoCollectionViewCell.swift; sourceTree = "<group>"; };
-		6ABE8D501F7C339C00975C18 /* MapViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MapViewController.swift; path = VirtualTouristRev2/MapViewController.swift; sourceTree = "<group>"; };
+		6ABE8D501F7C339C00975C18 /* MapViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,16 +82,23 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		6ABE8D191F7C21F800975C18 = {
+		6A0A504B1F82D3250064427B /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				6A0A50431F7D7F2C0064427B /* PhotoAlbumViewController.swift */,
-				6ABE8D501F7C339C00975C18 /* MapViewController.swift */,
+				6ABE8D371F7C221A00975C18 /* Model.xcdatamodeld */,
+				6ABE8D3D1F7C244D00975C18 /* Pin+CoreDataProperties.swift */,
 				6ABE8D3A1F7C244D00975C18 /* Photo+CoreDataClass.swift */,
 				6ABE8D3B1F7C244D00975C18 /* Photo+CoreDataProperties.swift */,
 				6ABE8D3C1F7C244D00975C18 /* Pin+CoreDataClass.swift */,
-				6ABE8D3D1F7C244D00975C18 /* Pin+CoreDataProperties.swift */,
+			);
+			name = Model;
+			sourceTree = "<group>";
+		};
+		6ABE8D191F7C21F800975C18 = {
+			isa = PBXGroup;
+			children = (
 				6ABE8D241F7C21F800975C18 /* VirtualTouristRev2 */,
+				6A0A504B1F82D3250064427B /* Model */,
 				6ABE8D231F7C21F800975C18 /* Products */,
 				6A0A50461F8018020064427B /* Frameworks */,
 			);
@@ -108,15 +115,16 @@
 		6ABE8D241F7C21F800975C18 /* VirtualTouristRev2 */ = {
 			isa = PBXGroup;
 			children = (
-				6ABE8D4E1F7C26FE00975C18 /* PhotoCollectionViewCell.swift */,
 				6A0A50451F7DE11E0064427B /* Flickr */,
 				6ABE8D421F7C248E00975C18 /* CoreDataStack.swift */,
 				6ABE8D251F7C21F800975C18 /* AppDelegate.swift */,
-				6ABE8D371F7C221A00975C18 /* Model.xcdatamodeld */,
 				6ABE8D291F7C21F800975C18 /* Main.storyboard */,
 				6ABE8D2C1F7C21F800975C18 /* Assets.xcassets */,
 				6ABE8D2E1F7C21F800975C18 /* LaunchScreen.storyboard */,
 				6ABE8D311F7C21F800975C18 /* Info.plist */,
+				6A0A50431F7D7F2C0064427B /* PhotoAlbumViewController.swift */,
+				6ABE8D4E1F7C26FE00975C18 /* PhotoCollectionViewCell.swift */,
+				6ABE8D501F7C339C00975C18 /* MapViewController.swift */,
 			);
 			path = VirtualTouristRev2;
 			sourceTree = "<group>";
@@ -376,7 +384,8 @@
 				6ABE8D381F7C221A00975C18 /* Model.xcdatamodel */,
 			);
 			currentVersion = 6ABE8D381F7C221A00975C18 /* Model.xcdatamodel */;
-			path = Model.xcdatamodeld;
+			name = Model.xcdatamodeld;
+			path = VirtualTouristRev2/Model.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
 		};

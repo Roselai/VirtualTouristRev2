@@ -1,3 +1,12 @@
+//
+//  PhotoAlbumViewController.swift
+//  VirtualTourist
+//
+//  Created by Shukti Shaikh on 8/15/17.
+//  Copyright © 2017 Shukti Shaikh. All rights reserved.
+//
+
+
 import UIKit
 import MapKit
 import CoreData
@@ -29,10 +38,7 @@ class PhotoAlbumViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // set up portion of the map with the selected pin
         mapView.setRegion(focusedRegion!, animated: true)
-        
-        // Drop a pin at that location
         
         let latitude = focusedRegion!.center.latitude
         let longitude = focusedRegion!.center.longitude
@@ -45,23 +51,17 @@ class PhotoAlbumViewController: UIViewController {
         
         mapView.addAnnotation(annotation)
         
-        // set delegates for the collectionView
         
         collectionView.delegate = self
         collectionView.dataSource = self
         
-        // new to iOS 10 - enable prefetcing
         collectionView.prefetchDataSource = self
         collectionView.isPrefetchingEnabled = true
         
-        // Disable bottom button until photos are displayed
         tabBarController?.tabBar.isHidden = true
         newPhotos.isEnabled = false
         configureButton()
         
-        // set-up the fetchedResultController
-        
-        // 1. set the fetchRequest
         let fetchRequest: NSFetchRequest<Photo> = Photo.fetchRequest()
         fetchRequest.fetchBatchSize = 18
         
@@ -69,15 +69,11 @@ class PhotoAlbumViewController: UIViewController {
         fetchRequest.sortDescriptors = [idSort]
         fetchRequest.predicate = NSPredicate(format: "pin = %@", pin!)
         
-        // 2. create the fetchedResultsController
         
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: managedContext, sectionNameKeyPath: nil, cacheName: nil)
         
-        // 3. set the delegate
         
         fetchedResultsController.delegate = self
-        
-        // 4. perform the fetch
         
         doFetch()
         
@@ -85,16 +81,12 @@ class PhotoAlbumViewController: UIViewController {
         if let photos = fetchedResultsController.fetchedObjects {
             
             if photos.count == 0 {
-                // no photos at this location, fetch new ones
                 fetchPhotos(pin: pin!)
             } else {
-                // there are photos in this location so display them (nothing to do for that, except...)
-                // we need to enable the bottom button
                 tabBarController?.tabBar.isHidden = false
                 newPhotos.isEnabled = true
             }
         } else {
-            // photos is nil so there are no photos: fetch photos
             fetchPhotos(pin: pin!)
         }
         
@@ -112,43 +104,30 @@ class PhotoAlbumViewController: UIViewController {
     
     func fetchPhotos(pin: Pin) {
         
-        // Send the request to the Flickr API to get photos at location
         FlickrClient.sharedInstance().getPhotosForPin(pin: pin) { (photosArray, error) in
 
-            
-            // GUARD: was there an error?
             guard error == nil else {
                 print("Network request returned with error: \(error), \(error?.userInfo)")
                 return
             }
-            
-            
-            // Did we receive photos
+
             guard photosArray != nil else {
                 print("Photos dictionay returned is nil")
                 return
             }
             
-            // Process the photos dictionary asynchronously on the main thread
+           
             DispatchQueue.main.async {
                 self.managedContext.performAndWait() {
                     if let photosArray = photosArray {
                         if photosArray.count == 0 {
-                            // NO photos in returned data
-                            // Display label to indicate no photos to user
                             self.noImagesLabel.isHidden = false
-                            // Disable interface for deleting or reloading photos
                             self.newPhotos.isEnabled = false
                             self.tabBarController?.tabBar.isHidden = true
                         } else {
-                            // We have images so hide the "no photos" label
                             self.noImagesLabel.isHidden = true
                         }
-                        // process the photos in the returned dictionary
                         for photoDictionary in photosArray {
-                            // Here we save the photos' URL, ID and title but not the actual photos,
-                            // that is done in the cellForItemAtIndexpath method
-                            // as each photo is required (and if needed)
                             let photo = Photo(context: self.managedContext)
                             photo.title = photoDictionary[Constants.FlickrResponseKeys.Title] as? String
                             photo.photoID = photoDictionary[Constants.FlickrResponseKeys.ID] as? String
@@ -156,7 +135,7 @@ class PhotoAlbumViewController: UIViewController {
                             photo.pin = pin
                         }
                     }
-                    // when all photos objects are created, save the context
+                    
                     do {
                         try self.managedContext.save()
                     } catch let error as NSError {
@@ -165,7 +144,7 @@ class PhotoAlbumViewController: UIViewController {
                     
                 }
                 
-                // and re-enable the button if photos were found
+                
                 if (self.fetchedResultsController.fetchedObjects?.count)! > 0 {
                     self.tabBarController?.tabBar.isHidden = false
                     self.newPhotos.isEnabled = true
@@ -179,23 +158,19 @@ class PhotoAlbumViewController: UIViewController {
     
     func deleteAllPhotos() {
         
-        // First prevent the button from being pressed a second time
         newPhotos.isEnabled = false
         tabBarController?.tabBar.isHidden = true
         
-        // Then delete all photos from the context
         for photo in fetchedResultsController.fetchedObjects! {
             managedContext.delete(photo)
         }
         
-        // save the context to persist the change
         do {
             try managedContext.save()
         } catch let error as NSError {
             print("Could not save context \(error), \(error.userInfo)")
         }
         
-        // refetch new photos from network
         fetchPhotos(pin: pin!)
         
     }
@@ -204,23 +179,18 @@ class PhotoAlbumViewController: UIViewController {
         
         var photosToDelete = [Photo]()
         
-        // get the list of Photos to delete from the indexPath array
         for indexPath in selectedCache {
             photosToDelete.append(fetchedResultsController.object(at: indexPath))
         }
         
-        // remove each photo from the managed context
         for photo in photosToDelete {
             managedContext.delete(photo)
         }
         
-        // reset the selection of photos
         selectedCache.removeAll()
         
-        // update the interface
         configureButton()
         
-        // save the context
         do {
             try managedContext.save()
         } catch let error as NSError {
@@ -232,10 +202,8 @@ class PhotoAlbumViewController: UIViewController {
     
     @IBAction func newPhotosButtonPressed(_ sender: Any) {
         if selectedCache.isEmpty {
-            // Button is to delete all photos and load new ones
             deleteAllPhotos()
         } else {
-            // Button is to delete selected photos
             deleteSelectedPhotos()
         }
 
@@ -243,7 +211,6 @@ class PhotoAlbumViewController: UIViewController {
     
     // MARK: - Fetch Request method
     
-    // execute the fetch request
     func doFetch() {
         do {
             try fetchedResultsController.performFetch()
@@ -263,18 +230,16 @@ extension PhotoAlbumViewController: UICollectionViewDelegate {
         
         let cell = collectionView.cellForItem(at: indexPath) as! PhotoCollectionViewCell
         
-        
-        // Toggle selection of this cell
+        cell.alpha = 0.5
+
         if let index = selectedCache.index(of: indexPath) {
             selectedCache.remove(at: index)
         } else {
             selectedCache.append(indexPath)
         }
         
-        // reconfigure the cell
         configure(cell, for: indexPath)
         
-        // update interface
         configureButton()
     }
     
@@ -286,28 +251,25 @@ extension PhotoAlbumViewController: UICollectionViewDelegate {
 
 extension PhotoAlbumViewController {
     
-    // Configure the collectionView cell
     func configure(_ cell: UICollectionViewCell, for indexPath: IndexPath) {
         
         guard let cell = cell as? PhotoCollectionViewCell else { return }
         
         var image: UIImage
         
-        
-        // get a reference to the object for the cell
         let photo = fetchedResultsController.object(at: indexPath)
-        // default value for image
+        
         image = UIImage(named: "placeHolder")!
-        // check to see if the image is already in core data
+        
         if photo.image != nil {
-            // image exists, use it
+            
             image = UIImage(data: photo.image! as Data)!
             cell.spinner.stopAnimating()
         } else {
-            // image has not been downloaded, try to download it
+            
             if let imagePath = photo.remoteURL {
                 let url = URL(string: imagePath)
-                FlickrClient.sharedInstance().downloadimageData(photoURL: url!, completionHandlerForDownloadImageData: { (imageData, error) in
+                _ = FlickrClient.sharedInstance().downloadimageData(photoURL: url!, completionHandlerForDownloadImageData: { (imageData, error) in
             
                     
                     // GUARD - check for error
@@ -339,10 +301,10 @@ extension PhotoAlbumViewController {
     
     func configureButton() {
         if selectedCache.isEmpty {
-            // No photos selected, so option is to remove all photos
+            
             newPhotos.title = "Remove all photos"
         } else {
-            // Some photos are selected, so option is to remove those
+            
             newPhotos.title = "Remove selected photos"
         }
     }
@@ -354,7 +316,6 @@ extension PhotoAlbumViewController {
 
 extension PhotoAlbumViewController: UICollectionViewDataSource {
     
-    // MARK: - CollectionView Datasource methods
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         
@@ -375,7 +336,6 @@ extension PhotoAlbumViewController: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
-        // Create a cell
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCollectionViewCell", for: indexPath) as! PhotoCollectionViewCell
         
         configure(cell, for: indexPath)
@@ -438,7 +398,7 @@ extension PhotoAlbumViewController: UICollectionViewDataSourcePrefetching {
     func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
         
         for indexPath in indexPaths {
-            // Create a cell
+            
             
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCollectionViewCell", for: indexPath) as! PhotoCollectionViewCell
             
