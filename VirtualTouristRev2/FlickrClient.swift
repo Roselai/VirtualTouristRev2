@@ -9,18 +9,12 @@
 import Foundation
 
 
-class FlickrClient: NSObject {
+class FlickrClient {
     
 
     // shared session
     var session = URLSession.shared
     
-    
-    // MARK: Initializers
-    
-    override init() {
-        super.init()
-    }
     
      func taskForGETMethod(method: String, parameters: [String: AnyObject]?, completionHandlerForGET: @escaping (_ result: AnyObject?, _ error: NSError?) -> Void) -> URLSessionDataTask {
         

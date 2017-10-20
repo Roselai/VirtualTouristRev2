@@ -48,7 +48,7 @@ import Foundation
             static let MediumURL = "url_m"
             static let ResultLimit = "50"
             static let PhotoSearchRadius = "1"
-            static let Page = "\(arc4random_uniform(10))"
+            static let Page = "\(arc4random_uniform(UInt32(4000/Int(Constants.FlickrParameterValues.ResultLimit)!)))"
         }
         
         // MARK: Flickr Response Keys

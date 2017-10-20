@@ -14,6 +14,7 @@ import CoreData
 class PhotoAlbumViewController: UIViewController {
     
     // MARK: - properties
+    var persistentContainer: NSPersistentContainer!
     var pin: Pin?
     var managedContext: NSManagedObjectContext!
     var focusedRegion: MKCoordinateRegion?
@@ -23,7 +24,7 @@ class PhotoAlbumViewController: UIViewController {
     var deletedCache: [IndexPath]!
     var updatedCache: [IndexPath]!
     var selectedCache = [IndexPath]()
-   
+    
     
     // MARK: - Outlets
     
@@ -37,6 +38,8 @@ class PhotoAlbumViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.navigationController?.isNavigationBarHidden = true
         
         mapView.setRegion(focusedRegion!, animated: true)
         
@@ -54,9 +57,6 @@ class PhotoAlbumViewController: UIViewController {
         
         collectionView.delegate = self
         collectionView.dataSource = self
-        
-        collectionView.prefetchDataSource = self
-        collectionView.isPrefetchingEnabled = true
         
         tabBarController?.tabBar.isHidden = true
         newPhotos.isEnabled = false
@@ -90,33 +90,35 @@ class PhotoAlbumViewController: UIViewController {
             fetchPhotos(pin: pin!)
         }
         
+        
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        navigationController?.navigationBar.isHidden = false
-        
-        
+        self.navigationController?.isNavigationBarHidden = false
     }
+    
+    
     
     // MARK: - Photos methods
     
     func fetchPhotos(pin: Pin) {
         
         FlickrClient.sharedInstance().getPhotosForPin(pin: pin) { (photosArray, error) in
-
+            
             guard error == nil else {
-                print("Network request returned with error: \(error), \(error?.userInfo)")
+                print("Network request returned with error: \(String(describing: error)), \(String(describing: error?.userInfo))")
                 return
             }
-
+            
             guard photosArray != nil else {
                 print("Photos dictionay returned is nil")
                 return
             }
             
-           
+            
             DispatchQueue.main.async {
                 self.managedContext.performAndWait() {
                     if let photosArray = photosArray {
@@ -127,20 +129,21 @@ class PhotoAlbumViewController: UIViewController {
                         } else {
                             self.noImagesLabel.isHidden = true
                         }
+                        
+                        
                         for photoDictionary in photosArray {
                             let photo = Photo(context: self.managedContext)
                             photo.title = photoDictionary[Constants.FlickrResponseKeys.Title] as? String
                             photo.photoID = photoDictionary[Constants.FlickrResponseKeys.ID] as? String
                             photo.remoteURL = photoDictionary[Constants.FlickrResponseKeys.MediumURL] as? String
                             photo.pin = pin
+                            self.saveContext(context: self.managedContext)
                         }
+                        
+                        
                     }
                     
-                    do {
-                        try self.managedContext.save()
-                    } catch let error as NSError {
-                        print("Could not save: \(error), \(error.userInfo)")
-                    }
+                    
                     
                 }
                 
@@ -165,13 +168,7 @@ class PhotoAlbumViewController: UIViewController {
             managedContext.delete(photo)
         }
         
-        do {
-            try managedContext.save()
-        } catch let error as NSError {
-            print("Could not save context \(error), \(error.userInfo)")
-        }
-        
-        fetchPhotos(pin: pin!)
+        self.saveContext(context: managedContext)
         
     }
     
@@ -191,22 +188,18 @@ class PhotoAlbumViewController: UIViewController {
         
         configureButton()
         
-        do {
-            try managedContext.save()
-        } catch let error as NSError {
-            print("Could not save context \(error), \(error.userInfo)")
-        }
-        
+        self.saveContext(context: managedContext)
     }
     
     
     @IBAction func newPhotosButtonPressed(_ sender: Any) {
         if selectedCache.isEmpty {
             deleteAllPhotos()
+            fetchPhotos(pin: pin!)
         } else {
             deleteSelectedPhotos()
         }
-
+        
     }
     
     // MARK: - Fetch Request method
@@ -231,7 +224,7 @@ extension PhotoAlbumViewController: UICollectionViewDelegate {
         let cell = collectionView.cellForItem(at: indexPath) as! PhotoCollectionViewCell
         
         cell.alpha = 0.5
-
+        
         if let index = selectedCache.index(of: indexPath) {
             selectedCache.remove(at: index)
         } else {
@@ -243,7 +236,7 @@ extension PhotoAlbumViewController: UICollectionViewDelegate {
         configureButton()
     }
     
-  
+    
     
 }
 
@@ -270,11 +263,11 @@ extension PhotoAlbumViewController {
             if let imagePath = photo.remoteURL {
                 let url = URL(string: imagePath)
                 _ = FlickrClient.sharedInstance().downloadimageData(photoURL: url!, completionHandlerForDownloadImageData: { (imageData, error) in
-            
+                    
                     
                     // GUARD - check for error
                     guard error == nil else {
-                        print("Error fetching photo data: \(error)")
+                        print("Error fetching photo data: \(String(describing: error))")
                         return
                     }
                     
@@ -284,11 +277,16 @@ extension PhotoAlbumViewController {
                         return
                     }
                     
-                    // Dispatch on main queue to update photo image
-                    DispatchQueue.main.async {
+                    
+                    self.persistentContainer.performBackgroundTask() { (context) in
                         photo.image = imageData as NSData?
-                        image = UIImage(data: photo.image as! Data)!
-                        cell.update(with: image)
+                        self.saveContext(context: context)
+                    }
+                    DispatchQueue.main.async {
+                        if photo.image != nil {
+                            image = UIImage(data: photo.image! as Data)!
+                            cell.update(with: image)
+                        }
                         
                     }
                 })
@@ -300,12 +298,22 @@ extension PhotoAlbumViewController {
     }
     
     func configureButton() {
+        
         if selectedCache.isEmpty {
             
             newPhotos.title = "Remove all photos"
         } else {
             
             newPhotos.title = "Remove selected photos"
+        }
+        
+    }
+    
+    func saveContext (context: NSManagedObjectContext){
+        do {
+            try context.save()
+        } catch let error as NSError {
+            print("Could not save context \(error), \(error.userInfo)")
         }
     }
     
@@ -391,18 +399,3 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
     }
 }
 
-// MARK: - EXTENSION - collectionView Data Source Prefetching
-
-extension PhotoAlbumViewController: UICollectionViewDataSourcePrefetching {
-    
-    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
-        
-        for indexPath in indexPaths {
-            
-            
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCollectionViewCell", for: indexPath) as! PhotoCollectionViewCell
-            
-            configure(cell, for: indexPath)
-        }
-    }
-}

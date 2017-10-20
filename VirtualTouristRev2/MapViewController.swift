@@ -16,6 +16,16 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     
     @IBOutlet weak var mapView: MKMapView!
     
+    //let delegate = UIApplication.shared.delegate as! AppDelegate
+    let persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "Model")
+        container.loadPersistentStores { (description, error) in
+            if let error = error {
+                print("Error setting up Core Data (\(error)).")
+            }
+        }
+        return container
+    }()
     
     var managedContext: NSManagedObjectContext!
     
@@ -33,11 +43,11 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        self.navigationController?.isNavigationBarHidden = true
+        
         mapView.delegate = self
         
-        let delegate = UIApplication.shared.delegate as! AppDelegate
-        let stack = delegate.stack
-        managedContext = stack.context
+        managedContext = persistentContainer.viewContext
         
         longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(self.addPin(gestureRecognizer:)))
         longPressRecognizer.numberOfTouchesRequired = 1
@@ -66,11 +76,9 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         }
         
         
-        
+        print(Constants.FlickrParameterValues.Page)
         
     }
-    
-    
     
     
     
@@ -78,12 +86,15 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        saveContext()
+        self.navigationController?.isNavigationBarHidden = true
+        saveContext(context: managedContext)
         
     }
     
     
     override func viewWillDisappear(_ animated: Bool) {
+        
+        self.navigationController?.isNavigationBarHidden = false
         saveMapRegion()
     }
     
@@ -104,12 +115,14 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
             
         } else if gestureRecognizer.state == UIGestureRecognizerState.ended {
             dragPin = nil
-            let pin = Pin(context: managedContext)
+            
+            persistentContainer.performBackgroundTask() { (context) in
+            let pin = Pin(context: context)
             pin.latitude = newCoordinates.latitude
             pin.longitude = newCoordinates.longitude
             
-            saveContext()
-            
+                self.saveContext(context: context)
+            }
             
         }
     }
@@ -227,6 +240,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
                 destinationViewController.pin = pin
                 destinationViewController.focusedRegion = region
                 destinationViewController.managedContext = managedContext
+                destinationViewController.persistentContainer = persistentContainer
                 
             }
         }
@@ -266,9 +280,9 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     
     
     
-    func saveContext (){
+    func saveContext (context: NSManagedObjectContext){
         do {
-            try managedContext.save()
+            try context.save()
         } catch let error as NSError {
             print("Could not save context \(error), \(error.userInfo)")
         }
